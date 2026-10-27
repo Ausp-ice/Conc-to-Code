@@ -4,7 +4,7 @@ Turns a Google Docs character draft into Edeia Toyhouse profile code.
 
 Site, profile layout and profile code edits by [Auspice](https://toyhou.se/Auspice); original profile code by [rustbqr / inkracht](https://toyhou.se/inkracht).
 
-**Use it here:** https://YOUR-USERNAME.github.io/edeia-profile-converter/
+**Use it here:** https://Ausp-ice.github.io/edeia-profile-converter/
 
 Paste or upload your draft's HTML, press Convert, and copy the result. The page includes a guide to formatting your draft. Everything runs in your browser using [Pyodide](https://pyodide.org), so your draft is never uploaded anywhere.
 
