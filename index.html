@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edeia Profile Converter</title>
+<meta name="description" content="Turn a Google Docs draft into Edeia Toyhouse profile code.">
+<style>
+	:root {
+		--bg: #000;
+		--panel: #0d1118;
+		--panel-2: #151c28;
+		--text: #e9ecf2;
+		--faded: #9aa3b2;
+		--accent: #6286c4;
+		--accent-soft: rgba(98, 134, 196, .18);
+		--border: #2b3647;
+		--warn: #e0b45c;
+		--error: #e06c6c;
+	}
+	* { box-sizing: border-box; }
+	body {
+		margin: 0;
+		background: var(--bg);
+		color: var(--text);
+		font: 15px/1.55 helvetica, arial, sans-serif;
+	}
+	main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+	h1, h2, h3 { letter-spacing: 1px; text-transform: uppercase; margin: 0; }
+	h1 { font-size: 30px; font-weight: 900; text-align: center; text-shadow: 0 0 25px var(--accent), 0 0 5px var(--accent); }
+	h2 { font-size: 18px; color: var(--accent); font-weight: 900; margin-bottom: 12px; }
+	h3 { font-size: 13px; color: var(--accent); margin: 18px 0 6px; }
+	a { color: var(--accent); }
+	code { background: var(--panel-2); padding: 1px 5px; border-radius: 3px; font-size: 13px; }
+	.subtitle { text-align: center; color: var(--faded); margin: 6px 0 28px; }
+	.sparkle { color: var(--accent); }
+	section { border: 1px solid var(--accent); background: var(--panel); padding: 20px; margin-bottom: 16px; }
+
+	.tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+	.tab {
+		background: none; border: 1px solid var(--border); color: var(--faded);
+		padding: 6px 14px; font: inherit; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+	}
+	.tab[aria-selected="true"] { border-color: var(--accent); color: var(--text); background: var(--accent-soft); }
+	textarea {
+		width: 100%; min-height: 220px; resize: vertical; padding: 10px;
+		background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+		font: 12px/1.45 consolas, "courier new", monospace;
+	}
+	textarea:focus, input:focus { outline: 1px solid var(--accent); }
+	.drop {
+		border: 1px dashed var(--accent); padding: 36px 16px; text-align: center; cursor: pointer;
+		background: var(--panel-2); color: var(--faded);
+	}
+	.drop.over { background: var(--accent-soft); color: var(--text); }
+	.drop strong { color: var(--text); }
+	.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 14px; }
+	label { font-size: 13px; color: var(--faded); }
+	input[type="text"] {
+		background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+		padding: 7px 10px; font: inherit; width: 200px;
+	}
+	button.main, button.small {
+		background: var(--accent); color: #fff; border: 0; cursor: pointer;
+		font: inherit; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+	}
+	button.main { padding: 10px 22px; }
+	button.small { padding: 6px 14px; font-size: 12px; }
+	button:disabled { opacity: .5; cursor: default; }
+	.status { font-size: 13px; color: var(--faded); }
+	.status.error { color: var(--error); }
+	.hidden { display: none !important; }
+
+	#notes { margin: 0 0 14px; padding-left: 20px; font-size: 13px; }
+	#notes li { margin-bottom: 4px; }
+	#notes li.todo { color: var(--warn); }
+	pre.error { white-space: pre-wrap; font-size: 12px; color: var(--error); background: var(--panel-2); padding: 10px; }
+
+	details { border-top: 1px solid var(--border); padding: 10px 0; }
+	details:first-of-type { border-top: 0; }
+	summary { cursor: pointer; font-weight: 700; }
+	details ul, details ol { padding-left: 20px; margin: 8px 0; }
+	details li { margin-bottom: 5px; }
+	.example {
+		background: var(--panel-2); border-left: 2px solid var(--accent); padding: 8px 12px;
+		font-size: 13px; margin: 8px 0;
+	}
+	.example .h { color: var(--accent); font-weight: 700; }
+	footer { text-align: center; font-size: 11px; color: var(--faded); text-transform: uppercase; letter-spacing: .5px; }
+</style>
+</head>
+<body>
+<main>
+	<h1>Edeia Profile Converter</h1>
+	<p class="subtitle"><span class="sparkle">&#10022;</span> Google Docs draft in, Toyhouse profile code out <span class="sparkle">&#10022;</span></p>
+
+	<section>
+		<h2>1. Your draft</h2>
+		<div class="tabs" role="tablist">
+			<button class="tab" role="tab" aria-selected="true" data-tab="paste">Paste HTML</button>
+			<button class="tab" role="tab" aria-selected="false" data-tab="upload">Upload file</button>
+		</div>
+		<div id="tab-paste">
+			<textarea id="pasted" spellcheck="false" placeholder="Paste the HTML of your draft here (see &quot;How to prepare your draft&quot; below)"></textarea>
+		</div>
+		<div id="tab-upload" class="hidden">
+			<label class="drop" id="drop">
+				<input type="file" id="file" accept=".html,.htm" hidden>
+				<strong>Drop your .html file here</strong><br>or click to choose one
+				<div id="file-name" class="status"></div>
+			</label>
+		</div>
+		<div class="row">
+			<label for="owner">Your toyhou.se username (optional)</label>
+			<input type="text" id="owner" placeholder="e.g. Auspice" autocomplete="off">
+		</div>
+		<div class="row">
+			<button class="main" id="convert" disabled>Convert</button>
+			<span class="status" id="status">Loading the converter&hellip;</span>
+		</div>
+	</section>
+
+	<section id="result" class="hidden">
+		<h2>2. Your profile code</h2>
+		<p class="status">Things to check or fill in by hand (also saved at the top of the code as a comment):</p>
+		<ul id="notes"></ul>
+		<textarea id="output" readonly spellcheck="false"></textarea>
+		<div class="row">
+			<button class="small" id="copy">Copy code</button>
+			<button class="small" id="download">Download .html</button>
+			<span class="status" id="copied"></span>
+		</div>
+	</section>
+
+	<section>
+		<h2>How to prepare your draft</h2>
+
+		<details open>
+			<summary>Getting the HTML out of Google Docs</summary>
+			<ol>
+				<li>Use Google Docs' <strong>heading styles</strong> (Format &rarr; Paragraph styles) for section titles. Big bold text that isn't a real heading won't be recognised.</li>
+				<li>Resolve comments and accept or reject suggestions first, or they can end up in the code.</li>
+				<li>Select all (<code>Ctrl+A</code>), copy, and paste into the editor at <a href="https://text-html.com/" target="_blank" rel="noopener">text-html.com</a>. Copy the HTML it produces and paste it in the box above.</li>
+				<li>Or: in Google Docs, choose File &rarr; Download &rarr; Web page (.html, zipped). Unzip it and upload the <code>.html</code> file.</li>
+			</ol>
+		</details>
+
+		<details>
+			<summary>Basics (top of the doc)</summary>
+			<p>Everything before the first Heading 1 is the top of the profile. Write each Basics field as a <strong>bold label with a colon</strong>, then the value. Put them on separate lines; Shift+Enter line breaks are fine.</p>
+			<div class="example"><strong>Name:</strong> Onaara<br><strong>Pronunciation:</strong> [oh-NAR-uh]<br><strong>Idea:</strong> Theophagy<br><strong>Pronouns:</strong> she/they/it</div>
+			<ul>
+				<li><strong>Fields with a spot in the layout:</strong> Name, Pronunciation, Idea, Prominence, Origin, Gender, Pronouns, Species, Masterlist, Previous Species (or Previous Form), Era of Birth, Themes, Significant Dates (or Age/Dates), CW.</li>
+				<li><strong>Settings:</strong> <code>Accent:</code> a hex colour for the profile's theme (e.g. <code>#bda891</code>), <code>Toyhouse:</code> the character's toyhou.se link (used for the gallery links), <code>Quote:</code> an in-character quote, <code>Owner:</code> your toyhou.se username.</li>
+				<li>Any other bold label is listed in the notes so you can place it yourself.</li>
+				<li>Ordinary paragraphs up here become the Intro. An optional first line like "Onaara, Edeia of Theophagy" is skipped.</li>
+			</ul>
+		</details>
+
+		<details>
+			<summary>Sections (Heading 1)</summary>
+			<p>Each Heading 1 starts a section. These names are recognised:</p>
+			<ul>
+				<li><strong>Personality</strong> (or About): if it opens with an italic quote in quotation marks, that becomes the in-character quote.</li>
+				<li><strong>Idea Interpretation</strong></li>
+				<li><strong>Abilities</strong>: a Heading 2 <em>Idea Magic</em>, then one Heading 3 per ability. A <em>General Edeia Abilities</em> heading is skipped, since the layout already includes that paragraph.</li>
+				<li><strong>History</strong> (or Story): a bullet list at the very start becomes the timeline. After that, each Heading 2 is an era that goes under "Read more". A Heading 2 called <em>Full Story</em> holds a long version with no eras.</li>
+				<li><strong>Abstraction</strong></li>
+				<li><strong>Relations</strong> and <strong>Relations with Others</strong>, plus <strong>Fusions</strong>: see below.</li>
+				<li><strong>Design</strong> (or Appearance): bold label lines like <code>Height:</code>, <code>Voice:</code> and <code>References:</code>, then bullets for design notes.</li>
+				<li><strong>Playlist</strong>: one linked song per line or bullet. YouTube links get a working play button.</li>
+				<li><strong>Notes</strong> (or Trivia): bullet points.</li>
+				<li>Any other Heading 1 (e.g. <em>Followers</em>) gets its own box after History.</li>
+			</ul>
+		</details>
+
+		<details>
+			<summary>Relations and fusions</summary>
+			<p>Use one Heading 2 per character. If the next line is entirely in italics, it becomes the relation type.</p>
+			<div class="example"><span class="h">Relations</span> (Heading 1)<br><span class="h">Sylnae</span> (Heading 2)<br><em>Mentor</em><br>Onaara met Sylnae when&hellip;</div>
+			<ul>
+				<li>Characters in the converter's character list are filled in automatically with their link, image and owner. Spell the name the same way.</li>
+				<li>For anyone else, make the Heading 2 a link to their toyhou.se page, and add the image afterwards.</li>
+				<li>Enter your username above (or add an <code>Owner:</code> field) so your own characters don't get an "Owner:" line.</li>
+			</ul>
+		</details>
+
+		<details>
+			<summary>After converting</summary>
+			<ul>
+				<li>Read the list of notes. Anything marked <code>TBD</code> in the code needs filling in.</li>
+				<li>Images in the doc aren't carried over. Add image links for the header, focal art, Abstraction, alt forms, playlist covers and relation pictures.</li>
+				<li>Ability tags start as <code>TBD tag</code>.</li>
+				<li>The "design by / art by" credit links point to Auspice by default. Change them to the right artists.</li>
+				<li>Paste the code into your Toyhouse profile's HTML editor. Search the code for <code>TBD</code> to find every gap.</li>
+			</ul>
+		</details>
+	</section>
+
+	<footer>
+		Site, profile layout and profile code edits by <a href="https://toyhou.se/Auspice">Auspice</a> &middot; original profile code by <a href="https://toyhou.se/inkracht">rustbqr / inkracht</a><br>
+		Your draft never leaves your browser
+	</footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const SCRIPTS = ['extract.py', 'extract_basic.py', 'render.py', 'characters.csv'];
+let pyodide = null;
+let mode = 'paste';
+let uploaded = null; // {name, text}
+let lastName = 'profile';
+
+function store(key, value) {
+	try { localStorage.setItem(key, value); } catch (e) {}
+}
+function recall(key) {
+	try { return localStorage.getItem(key) || ''; } catch (e) { return ''; }
+}
+
+function setStatus(text, isError) {
+	$('status').textContent = text;
+	$('status').classList.toggle('error', !!isError);
+}
+
+function updateButton() {
+	const ready = pyodide && (mode === 'paste' ? $('pasted').value.trim() : uploaded);
+	$('convert').disabled = !ready;
+}
+
+async function boot() {
+	try {
+		pyodide = await loadPyodide();
+		await pyodide.loadPackage('beautifulsoup4');
+		pyodide.FS.mkdirTree('/app/input');
+		for (const name of SCRIPTS) {
+			const res = await fetch('converter/' + name, { cache: 'no-cache' });
+			if (!res.ok) throw new Error('Could not load converter/' + name);
+			pyodide.FS.writeFile('/app/' + name, await res.text());
+		}
+		pyodide.runPython("import sys; sys.path.insert(0, '/app'); from render import render");
+		setStatus('Ready.');
+	} catch (e) {
+		pyodide = null;
+		setStatus('The converter failed to load. Try refreshing the page. (' + e.message + ')', true);
+	}
+	updateButton();
+}
+
+// tabs
+document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+	mode = tab.dataset.tab;
+	document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t === tab));
+	$('tab-paste').classList.toggle('hidden', mode !== 'paste');
+	$('tab-upload').classList.toggle('hidden', mode !== 'upload');
+	updateButton();
+}));
+$('pasted').addEventListener('input', updateButton);
+
+// upload
+async function takeFile(file) {
+	if (!file) return;
+	uploaded = { name: file.name, text: await file.text() };
+	$('file-name').textContent = file.name;
+	updateButton();
+}
+$('file').addEventListener('change', e => takeFile(e.target.files[0]));
+const drop = $('drop');
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => takeFile(e.dataTransfer.files[0]));
+
+// owner, remembered between visits
+$('owner').value = recall('owner');
+$('owner').addEventListener('input', () => store('owner', $('owner').value.trim()));
+
+function showNotes(html) {
+	const m = html.match(/^<!----\s*([\s\S]*?)\s*---->/);
+	const list = $('notes');
+	list.innerHTML = '';
+	if (!m) return;
+	// indented "  - x" lines belong to the note above them
+	const items = [];
+	for (const line of m[1].split('\n')) {
+		if (!line.trim()) continue;
+		if (/^\s+-/.test(line) && items.length) items[items.length - 1] += '\n' + line.trim();
+		else items.push(line.trim());
+	}
+	for (const text of items) {
+		if (/^(Source file|Accent colour|Read as a DOC DRAFT)/.test(text)) continue;
+		const li = document.createElement('li');
+		li.style.whiteSpace = 'pre-line';
+		li.textContent = text;
+		if (/TBD|by hand|manually/i.test(text)) li.className = 'todo';
+		list.appendChild(li);
+	}
+}
+
+$('convert').addEventListener('click', () => {
+	let name, text;
+	if (mode === 'paste') {
+		name = 'draft.html';
+		text = $('pasted').value;
+	} else {
+		name = uploaded.name.replace(/[^\w.-]+/g, '_');
+		text = uploaded.text;
+	}
+	// render.py treats e_* files as Edeia (fills in Species)
+	const stem = name.replace(/\.html?$/i, '').replace(/_basic$/, '');
+	const inputName = (stem.startsWith('e_') ? stem : 'e_' + stem) + '.html';
+	lastName = stem;
+	const path = '/app/input/' + inputName;
+	$('result').classList.add('hidden');
+	try {
+		pyodide.FS.writeFile(path, text);
+		pyodide.globals.set('input_path', path);
+		pyodide.globals.set('owner', $('owner').value.trim());
+		const html = pyodide.runPython('render(input_path, owner)');
+		$('output').value = html;
+		showNotes(html);
+		$('copied').textContent = '';
+		$('result').classList.remove('hidden');
+		$('result').scrollIntoView({ behavior: 'smooth' });
+		setStatus('Done.');
+	} catch (e) {
+		setStatus('Something went wrong while converting. Details below.', true);
+		$('notes').innerHTML = '';
+		const pre = document.createElement('pre');
+		pre.className = 'error';
+		pre.textContent = String(e.message || e).split('\n').slice(-6).join('\n');
+		$('notes').appendChild(pre);
+		$('output').value = '';
+		$('result').classList.remove('hidden');
+	}
+});
+
+$('copy').addEventListener('click', async () => {
+	try {
+		await navigator.clipboard.writeText($('output').value);
+	} catch (e) {
+		$('output').select();
+		document.execCommand('copy');
+	}
+	$('copied').textContent = 'Copied!';
+});
+
+$('download').addEventListener('click', () => {
+	const blob = new Blob([$('output').value], { type: 'text/html' });
+	const a = document.createElement('a');
+	a.href = URL.createObjectURL(blob);
+	a.download = lastName + '_profile.html';
+	a.click();
+	URL.revokeObjectURL(a.href);
+});
+
+boot();
+</script>
+</body>
+</html>
